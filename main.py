@@ -1,3 +1,10 @@
+COLS = 25
+ROWS = 10
+EMPTY = '☐'
+PLAYER = 'P'
+ANTHILL = 'A'
+ANT = 'a'
+
 import random
 
 
@@ -12,7 +19,7 @@ class Cell:
     content: Содержимое ячейки, например, объект игрока.
     """
 
-    def __init__(self, image='☐', Y=None, X=None):
+    def __init__(self, Y=None, X=None):
         """
         Инициализация ячейки.
 
@@ -21,10 +28,16 @@ class Cell:
         Y (int): Координата по вертикали.
         X (int): Координата по горизонтали.
         """
-        self.image = image
+        self.image = EMPTY
         self.Y = Y
         self.X = X
-        self.content = None  # Initialize content to None
+        self.content = None  
+
+    def draw(self):
+        if self.content:
+            print(self.content.image, end=' ')
+        else:
+            print(self.image, end=' ')
 
 class Player:
     """
@@ -36,7 +49,7 @@ class Player:
     X (int): Координата игрока по горизонтали.
     """
 
-    def __init__(self, image='P', Y=None, X=None):
+    def __init__(self, Y=None, X=None):
         """
         Инициализация игрока.
 
@@ -45,14 +58,13 @@ class Player:
         Y (int): Координата игрока по вертикали.
         X (int): Координата игрока по горизонтали.
         """
-        self.image = image
+        self.image = PLAYER
         self.Y = Y
         self.X = X
 
 class Field:
-    # ... (previous code remains unchanged)
 
-    def __init__(self, rows=10, cols=25, cell=Cell, player=Player):
+    def __init__(self, cell=Cell, player=Player):
         """
         Инициализация игрового поля.
 
@@ -62,10 +74,10 @@ class Field:
         cell (Cell): Класс ячейки, используемый для создания полей.
         player (Player): Класс игрока.
         """
-        self.rows = rows
-        self.cols = cols
-        self.cells = [[cell(Y=y, X=x) for x in range(cols)] for y in range(rows)]
-        self.player = player(Y=random.randint(0, rows-1), X=random.randint(0, cols-1))
+        self.rows = ROWS
+        self.cols = COLS
+        self.cells = [[cell(Y=y, X=x) for x in range(COLS)] for y in range(ROWS)]
+        self.player = player(Y=random.randint(0, ROWS-1), X=random.randint(0, COLS-1))
         self.cells[self.player.Y][self.player.X].content = self.player
 
     def drawrows(self):
@@ -74,10 +86,7 @@ class Field:
         """
         for row in self.cells:
             for cell in row:
-                if (cell.Y, cell.X) != (self.player.Y, self.player.X):
-                    print(cell.image, end=' ')
-                else:
-                    print(self.player.image, end=' ')
+                cell.draw()
             print()
 
 
