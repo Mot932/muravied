@@ -8,6 +8,19 @@ ROWS = 10
 EMPTY = '☐'
 PLAYER = 'P'
 ANT = 'a'
+ANTHILL = 'A'
+ANTHILL_MAX = 4
+ANTHILL_MINI = 1
+UP = 'up'
+DOWN = 'down'
+RIGHT = 'right'
+LEFT = 'left'
+
+class GameObject:
+    def __init__(self, y, x):
+        self.y = y
+        self.x = x
+        self.image = None
 
 # Класс, представляющий ячейку на поле
 class Cell:
@@ -33,100 +46,43 @@ class Cell:
         else:
             print(self.image, end=' ')
 
-# Класс, представляющий персонажа на поле
-class Character:
-    def __init__(self, Y=None, X=None, image=None):
-        """
-        Конструктор класса Character.
-
-        Параметры:
-        - Y: Координата Y персонажа.
-        - X: Координата X персонажа.
-        - image: Символ, представляющий персонажа на поле.
-        """
-        self.image = image
-        self.Y = Y
-        self.X = X
+# Класс, представляющий игрока
+class Player(GameObject):
+def __init__(self, y=None, x=None):
+        super().__init__(y, x)
+        self.image = PLAYER
 
     def move(self, direction, field):
-        """
-        Метод перемещения персонажа в указанном направлении.
+        new_y, new_x = self.y, self.x
 
-        Параметры:
-        - direction: Направление движения ('up', 'down', 'left', 'right').
-        - field: Объект класса Field, представляющий игровое поле.
-        """
-        new_Y, new_X = self.Y, self.X
+        if direction == UP and self.y > 0 and not isinstance(field.cells[self.y - 1][self.x].content, Anthill):
+            new_y -= 1
+        elif direction == DOWN and self.y < field.rows - 1 and not isinstance(field.cells[self.y + 1][self.x].content, Anthill):
+            new_y += 1
+        elif direction == LEFT and self.x > 0 and not isinstance(field.cells[self.y][self.x - 1].content, Anthill):
+            new_x -= 1
+        elif direction == RIGHT and self.x < field.cols - 1 and not isinstance(field.cells[self.y][self.x + 1].content, Anthill):
+            new_x += 1
 
-        if direction == 'up' and self.Y > 0:
-            new_Y -= 1
-        elif direction == 'down' and self.Y < field.rows - 1:
-            new_Y += 1
-        elif direction == 'left' and self.X > 0:
-            new_X -= 1
-        elif direction == 'right' and self.X < field.cols - 1:
-            new_X += 1
+        # Update the player's position
+        field.cells[self.y][self.x].content = None
+        self.y, self.x = new_y, new_x
+        field.cells[self.y][self.x].content = self
 
-        if field.cells[new_Y][new_X].content is None:
-            field.cells[self.Y][self.X].content = None
-            self.Y, self.X = new_Y, new_X
-            field.cells[self.Y][self.X].content = self
+class Anthill(GameObject):
+    def __init__(self, x, y, quantity):
+        super().__init__(y, x)
+        self.image = 'A'
+        self.quantity = quantity
 
-# Класс, представляющий игрока
-class Player(Character):
-    def __init__(self, Y=None, X=None):
-        """
-        Конструктор класса Player.
-
-        Параметры:
-        - Y: Координата Y игрока.
-        - X: Координата X игрока.
-        """
-        super().__init__(Y, X, image=PLAYER)
-
-# Класс, представляющий муравья
-class Ant(Character):
-    def __init__(self, Y=None, X=None):
-        """
-        Конструктор класса Ant.
-
-        Параметры:
-        - Y: Координата Y муравья.
-        - X: Координата X муравья.
-        """
-        super().__init__(Y, X, image=ANT)
-
-    def move_away_from_player(self, player, field):
-        """
-        Метод перемещения муравья в противоположном направлении относительно игрока.
-
-        Параметры:
-        - player: Объект класса Player, представляющий игрока.
-        - field: Объект класса Field, представляющий игровое поле.
-        """
-        directions = ['up', 'down', 'left', 'right']
-        opposite_directions = {
-            'up': 'down',
-            'down': 'up',
-            'left': 'right',
-            'right': 'left'
-        }
-
-        direction = random.choice(directions)
-        player_distance = abs(player.Y - self.Y) + abs(player.X - self.X)
-
-        while True:
-            self.move(direction, field)
-
-            new_distance = abs(player.Y - self.Y) + abs(player.X - self.X)
-            if new_distance >= player_distance:
-                break
-
-            direction = opposite_directions[direction]
+    def place_anthill(self, field):
+        field.cells[self.y][self.x].content = self
 
 # Класс, представляющий игровое поле
 class Field:
-    def __init__(self, cell=Cell, player=Player, ant=Ant):
+    def __init__(self, cell=Cell, player=Player, anthill=Anthill, anthill_max=ANTHILL_MAX, anthill_mini=ANTHILL_MINI):
+        # ... (ваш существующий код)
+        self.anthills = []
         """
         Конструктор класса Field.
 
@@ -137,11 +93,10 @@ class Field:
         """
         self.rows = ROWS
         self.cols = COLS
+        self.anthills = []
         self.cells = [[cell(Y=y, X=x) for x in range(COLS)] for y in range(ROWS)]
-        self.player = player(Y=random.randint(0, ROWS - 1), X=random.randint(0, COLS - 1))
-        self.ant = ant(Y=random.randint(0, ROWS - 1), X=random.randint(0, COLS - 1))
-        self.cells[self.player.Y][self.player.X].content = self.player
-        self.cells[self.ant.Y][self.ant.X].content = self.ant
+        self.player = player(y=random.randint(0, ROWS - 1), x=random.randint(0, COLS - 1))
+        self.cells[self.player.y][self.player.x].content = self.player
 
     def drawrows(self):
         """
@@ -151,6 +106,15 @@ class Field:
             for cell in row:
                 cell.draw()
             print()
+
+    def add_anthill(self, anthill):
+        self.anthills.append(anthill)
+        anthill.place_anthill(self)
+
+    def add_anthills_randomly(self):
+        for _ in range(random.randint(ANTHILL_MINI, ANTHILL_MAX)):
+            anthill = Anthill(x=random.randint(0, COLS - 1), y=random.randint(0, ROWS - 1), quantity=random.randint(ANTHILL_MINI, ANTHILL_MAX))
+            self.add_anthill(anthill)
 
 # Функция для очистки экрана консоли
 def clear_screen():
@@ -169,7 +133,7 @@ class Game:
         Конструктор класса Game.
         """
         self.field = Field()
-
+        self.field.add_anthills_randomly()
     # Обработка событий клавиатуры
     def handle_keyboard_event(self, event):
         """
@@ -178,23 +142,20 @@ class Game:
         Параметры:
         - event: Объект события клавиатуры.
         """
+    def handle_keyboard_event(self, event):
         if event.event_type == keyboard.KEY_DOWN:
-            if event.name == 'up':
-                self.field.player.move('up', self.field)
-                self.field.ant.move_away_from_player(self.field.player, self.field)
-            elif event.name == 'down':
-                self.field.player.move('down', self.field)
-                self.field.ant.move_away_from_player(self.field.player, self.field)
-            elif event.name == 'left':
-                self.field.player.move('left', self.field)
-                self.field.ant.move_away_from_player(self.field.player, self.field)
-            elif event.name == 'right':
-                self.field.player.move('right', self.field)
-                self.field.ant.move_away_from_player(self.field.player, self.field)
+            if event.name == UP:
+                self.field.player.move(UP, self.field)
+            elif event.name == DOWN:
+                self.field.player.move(DOWN, self.field)
+            elif event.name == LEFT:
+                self.field.player.move(LEFT, self.field)
+            elif event.name == RIGHT:
+                self.field.player.move(RIGHT, self.field)
             elif event.name == 'esc':
                 print("Выход из игры.")
                 return True
-            return False
+        return False
 
     # Обновление состояния игры
     def update_game_state(self):
