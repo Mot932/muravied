@@ -16,6 +16,7 @@ ANTHILL_MAX = 4
 ANTHILL_MINI = 1
 ANTS_PER_ANTHILL_MAX = 10
 ANTS_PER_ANTHILL_MIN = 1
+MAX_SPAWN_COUNTER = 5
 
 
 class GameObject:
@@ -120,49 +121,43 @@ class Field:
 
     def add_anthills_randomly(self):
         available_cells = [(x, y) for x in range(self.cols) for y in range(self.rows) if (x, y) != (self.player.x, self.player.y)]
-
         quantity = random.randint(ANTHILL_MINI, ANTHILL_MAX)
         
         for i in range(quantity):
             if not available_cells:
                 break
-            anthill_x, anthill_y = random.choice(available_cells)
+            anthill_x, anthill_y = random.sample(available_cells, 1)[0]
             available_cells.remove((anthill_x, anthill_y))
 
             anthill = Anthill(x=anthill_x, y=anthill_y, quantity=random.randint(ANTHILL_MINI, ANTHILL_MAX))
             self.add_anthill(anthill)
-    
+
     def spawn_ants(self):
         for anthill in self.anthills:
             if anthill.ants_counter > 0 and anthill.spawn_counter == 0:
-                # Получаем координаты муравейника
                 anthill_x, anthill_y = anthill.x, anthill.y
-
-                # Получаем координаты всех соседних клеток вокруг муравейника
                 neighbors = [
                     (anthill_y - 1, anthill_x - 1), (anthill_y - 1, anthill_x), (anthill_y - 1, anthill_x + 1),
                     (anthill_y, anthill_x - 1),                                 (anthill_y, anthill_x + 1),
                     (anthill_y + 1, anthill_x - 1), (anthill_y + 1, anthill_x), (anthill_y + 1, anthill_x + 1)
                 ]
+                empty_neighbors = filter(lambda pos: 0 <= pos[0] < self.rows and 0 <= pos[1] < self.cols and not self.cells[pos[0]][pos[1]].content, neighbors)
 
-                # Фильтруем только пустые клетки
-                empty_neighbors = [(y, x) for y, x in neighbors if 0 <= y < self.rows and 0 <= x < self.cols and not self.cells[y][x].content]
+                empty_neighbors = list(empty_neighbors)
 
-                # Выбираем случайную пустую клетку, если они есть
                 if empty_neighbors:
                     ant_y, ant_x = random.choice(empty_neighbors)
                     ant = Ant(y=ant_y, x=ant_x)
                     self.cells[ant_y][ant_x].content = ant
                     anthill.ants_counter -= 1
-                    anthill.spawn_counter = 1  # Устанавливаем счетчик спауна в 1
+                    anthill.spawn_counter = 1
 
-                    print(f"Муравей заселился клетку ({ant_x}, {ant_y})")
 
             if anthill.spawn_counter > 0:
                 anthill.spawn_counter += 1
-                if anthill.spawn_counter > 5:  # Через 5 ходов сбрасываем счетчик спауна
+                if anthill.spawn_counter > MAX_SPAWN_COUNTER:
                     anthill.spawn_counter = 0
-                    print("Спаун муравьев завершён для муравейника.")
+
 
 def clear_screen():
     if os.name == 'nt':
